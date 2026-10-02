@@ -72,6 +72,7 @@ export default function App() {
   const [openRooms, setOpenRooms] = useState<LobbyRoomInfo[]>([]);
   const [errorMessage, setErrorMessage] = useState('');
   const [isConnecting, setIsConnecting] = useState(false);
+  const [isConnected, setIsConnected] = useState(false);
 
   // Game Room Snapshot
   const [roomState, setRoomState] = useState<GameRoomState | null>(null);
@@ -87,16 +88,28 @@ export default function App() {
 
   // Initialize Socket.io connection on app mount
   useEffect(() => {
-    const socket = io({
+    const serverUrl = (import.meta.env.VITE_SERVER_URL as string) || undefined;
+    const socket = io(serverUrl, {
       transports: ['websocket', 'polling'],
       reconnection: true,
-      reconnectionAttempts: 5,
+      reconnectionAttempts: 10,
+      reconnectionDelay: 1000,
     });
     socketRef.current = socket;
 
     socket.on('connect', () => {
+      setIsConnected(true);
       setIsConnecting(false);
       socket.emit('get_lobby_rooms');
+    });
+
+    socket.on('disconnect', () => {
+      setIsConnected(false);
+    });
+
+    socket.on('connect_error', () => {
+      setIsConnected(false);
+      setIsConnecting(false);
     });
 
     socket.on('lobby_rooms', (rooms: LobbyRoomInfo[]) => {
@@ -170,7 +183,10 @@ export default function App() {
     const socket = socketRef.current;
     if (!socket) return;
     if (!socket.connected) {
+      setErrorMessage('Đang kết nối lại đến máy chủ Socket.io, vui lòng đợi 1-2 giây...');
+      setTimeout(() => setErrorMessage(''), 4000);
       socket.connect();
+      return;
     }
 
     setErrorMessage('');
@@ -403,9 +419,19 @@ export default function App() {
           <div className="w-full max-w-2xl bg-slate-900/95 border border-amber-500/40 rounded-3xl p-6 sm:p-8 backdrop-blur-2xl shadow-2xl shadow-cyan-950/70">
             {/* Header Title */}
             <div className="text-center mb-6">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs tracking-wider uppercase font-semibold mb-3">
-                <Activity className="w-4 h-4 text-emerald-400" />
-                Chế Độ 2D Siêu Mượt - 60 FPS (Không Giật Lag)
+              <div className="flex flex-wrap items-center justify-center gap-2 mb-3">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs tracking-wider uppercase font-semibold">
+                  <Activity className="w-4 h-4 text-emerald-400" />
+                  Chế Độ 2D Siêu Mượt - 60 FPS
+                </div>
+                <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${
+                  isConnected 
+                    ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-300' 
+                    : 'bg-amber-500/10 border-amber-500/30 text-amber-300'
+                }`}>
+                  <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-cyan-400 animate-pulse' : 'bg-amber-400'}`} />
+                  {isConnected ? 'Máy Chủ: Đã Kết Nối' : 'Máy Chủ: Đang Kết Nối...'}
+                </div>
               </div>
               <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-500 bg-clip-text text-transparent font-['Cinzel',serif]">
                 YASUO 1VS1 ARENA
@@ -1001,6 +1027,8 @@ export default function App() {
 }
 
 const rootContainer = document.getElementById('root');
-if (rootContainer && !rootContainer.hasChildNodes()) {
-  createRoot(rootContainer).render(<App />);
+if (rootContainer && !(window as unknown as { __yasuoRoot?: ReturnType<typeof createRoot> }).__yasuoRoot) {
+  const root = createRoot(rootContainer);
+  (window as unknown as { __yasuoRoot?: ReturnType<typeof createRoot> }).__yasuoRoot = root;
+  root.render(<App />);
 }
