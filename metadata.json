@@ -1,0 +1,6 @@
+{
+  "name": "Yasuo 1vs1 Arena - Đấu Trường Phong Kiếm 3D",
+  "description": "Trò chơi đấu kiếm 3D 1v1 trực tuyến thời gian thực lấy cảm hứng từ Yasuo trong LMHT với đầy đủ bộ chiêu Q W E R, thanh máu 3D và vật lý lốc xoáy.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
