@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
+import { createRoot } from 'react-dom/client';
+import './index.css';
 import { io, Socket } from 'socket.io-client';
 import { Game2DRenderer } from './game/canvas2DRenderer.js';
 import { Game3DRenderer } from './game/threeRenderer.js';
@@ -996,4 +998,9 @@ export default function App() {
       )}
     </div>
   );
+}
+
+const rootContainer = document.getElementById('root');
+if (rootContainer && !rootContainer.hasChildNodes()) {
+  createRoot(rootContainer).render(<App />);
 }
